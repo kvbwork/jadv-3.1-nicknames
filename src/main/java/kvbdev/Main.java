@@ -75,8 +75,8 @@ public class Main {
 
     protected static void awaitShutdown(ThreadGroup threadGroup) {
         try {
+            Thread[] threads = new Thread[1];
             while (threadGroup.activeCount() > 0) {
-                Thread[] threads = new Thread[1];
                 threadGroup.enumerate(threads, false);
                 threads[0].join();
             }
