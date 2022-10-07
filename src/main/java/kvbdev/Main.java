@@ -1,7 +1,9 @@
 package kvbdev;
 
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class Main {
@@ -18,33 +20,28 @@ public class Main {
             texts[i] = generateText("abc", 3 + random.nextInt(3));
         }
 
-        awaitNiceWordsCount(texts);
+        awaitNiceWordsCount(texts, List.of(
+                textChecker::isPalindrome,
+                textChecker::hasOneLetter,
+                textChecker::hasLetterIncreasion
+        ));
 
         System.out.println("Красивых слов с длиной 3: " + niceWord3.get() + " шт");
         System.out.println("Красивых слов с длиной 4: " + niceWord4.get() + " шт");
         System.out.println("Красивых слов с длиной 5: " + niceWord5.get() + " шт");
     }
 
-    public static void awaitNiceWordsCount(String[] texts) {
+    public static void awaitNiceWordsCount(String[] texts, List<Predicate<String>> textChecks) {
         ThreadGroup textWorkersGroup = new ThreadGroup("TextWorkers");
 
-        new Thread(textWorkersGroup, () ->
-                Stream.of(texts)
-                        .filter(textChecker::isPalindrome)
-                        .forEach(Main::countNiceWord)
-        ).start();
-
-        new Thread(textWorkersGroup, () ->
-                Stream.of(texts)
-                        .filter(textChecker::hasOneLetter)
-                        .forEach(Main::countNiceWord)
-        ).start();
-
-        new Thread(textWorkersGroup, () ->
-                Stream.of(texts)
-                        .filter(textChecker::hasLetterIncreasion)
-                        .forEach(Main::countNiceWord)
-        ).start();
+        textChecks.stream()
+                .forEach(textCheck ->
+                        new Thread(textWorkersGroup, () ->
+                                Stream.of(texts)
+                                        .filter(textCheck)
+                                        .forEach(Main::countNiceWord)
+                        ).start()
+                );
 
         awaitShutdown(textWorkersGroup);
     }
